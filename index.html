@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PS Daily Report — Command Center</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700;800&display=swap');
+
 :root{
   --bg:#05070a; --panel:#0b0f14; --panel2:#0e131a; --border:#1b2633;
   --text:#e6edf3; --muted:#7d8b99; --green:#39d353; --green2:#26a641;
@@ -98,7 +100,7 @@ button.loading::after{content:"";width:13px;height:13px;border:2px solid white;b
 @keyframes spin{to{transform:translateY(-50%) rotate(360deg)}}
 .canvas-shell{margin-top:18px;border:1px solid var(--border);border-radius:8px;overflow:auto;background:#06090d;min-height:70px}
 .canvas-shell:has(canvas[width="0"]){display:none}
-canvas{display:block;width:100%;height:auto;background:white}
+canvas{display:block;width:100%;height:auto;background:#F0E9E9}
 .table-section{border:1px solid var(--border);background:#090d12;border-radius:8px;overflow:hidden;margin-bottom:12px}
 .table-title{padding:11px 13px;border-bottom:1px solid var(--border);font-size:12px;color:#8b98a5;letter-spacing:.4px}
 table{width:100%;border-collapse:collapse;margin:0}
@@ -123,36 +125,22 @@ td b{color:var(--green)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;padding:10px 15px;border:1px solid #275b34;border-radius:7px;background:#0c1a11;color:#8ef29c;box-shadow:0 12px 40px rgba(0,0,0,.4);font-size:11px;z-index:50;transition:.25s}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
-/* ===== Editable five image slots ===== */
 .image-slot{
-  position:relative;
-  min-width:0;
-  aspect-ratio:4/3;
-  border:1px solid var(--border);
-  border-radius:10px;
-  background:#080c11;
-  overflow:hidden;
-  cursor:pointer;
-  transition:.18s ease;
+  position:relative;min-width:0;aspect-ratio:4/3;border:1px solid var(--border);
+  border-radius:10px;background:#080c11;overflow:hidden;cursor:pointer;transition:.18s ease;
 }
 .image-slot:hover{border-color:#2b8a3e;transform:translateY(-1px)}
 .image-slot.selected{border-color:var(--green);box-shadow:0 0 0 1px rgba(57,211,83,.22),0 0 18px rgba(57,211,83,.08)}
 .image-slot.empty{display:flex;align-items:center;justify-content:center}
 .image-slot img{width:100%;height:100%;object-fit:cover;display:block}
 .slot-index{
-  position:absolute;left:7px;top:7px;z-index:2;
-  padding:3px 6px;border-radius:5px;
+  position:absolute;left:7px;top:7px;z-index:2;padding:3px 6px;border-radius:5px;
   background:rgba(5,7,10,.86);border:1px solid #263341;
   color:var(--green);font-size:10px;font-weight:700;
 }
-.slot-empty{
-  text-align:center;color:var(--muted);font-size:11px;line-height:1.5;padding:8px;
-}
+.slot-empty{text-align:center;color:var(--muted);font-size:11px;line-height:1.5;padding:8px;}
 .slot-empty b{display:block;color:#9aa8b5;margin-bottom:3px;letter-spacing:.5px}
-.slot-actions{
-  position:absolute;right:6px;bottom:6px;z-index:3;
-  display:flex;gap:5px;
-}
+.slot-actions{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;gap:5px;}
 .slot-btn{
   border:1px solid #293646;background:rgba(5,7,10,.9);
   color:#c9d1d9;border-radius:6px;padding:4px 6px;
@@ -166,9 +154,6 @@ td b{color:var(--green)}
 }
 .preview-count{color:var(--green)}
 
-/* =========================================================
-   v6 — DESKTOP DENSE 2-COLUMN
-   ========================================================= */
 .layout{
   display:grid !important;
   grid-template-columns:340px minmax(0,1fr) !important;
@@ -178,34 +163,21 @@ td b{color:var(--green)}
   padding:14px 0 50px !important;
 }
 .layout > .right-col{
-  grid-column:1 !important;
-  grid-row:1 !important;
-  display:grid !important;
-  grid-auto-rows:max-content !important;
-  align-content:start !important;
-  align-self:start !important;
-  gap:8px !important;
-  width:100% !important;
-  min-width:0 !important;
-  height:auto !important;
+  grid-column:1 !important;grid-row:1 !important;
+  display:grid !important;grid-auto-rows:max-content !important;
+  align-content:start !important;align-self:start !important;
+  gap:8px !important;width:100% !important;min-width:0 !important;height:auto !important;
 }
 .layout > .card{
-  grid-column:2 !important;
-  grid-row:1 !important;
-  align-self:start !important;
-  width:100% !important;
-  min-width:0 !important;
-  height:auto !important;
-  margin:0 !important;
+  grid-column:2 !important;grid-row:1 !important;
+  align-self:start !important;width:100% !important;
+  min-width:0 !important;height:auto !important;margin:0 !important;
 }
 .layout .card-body{min-height:0 !important;}
 .layout > .card .card-body,
 .layout > .card #pasteArea,
 .layout > .card .canvas-wrap,
-.layout > .card .output-wrap{
-  width:100% !important;
-  box-sizing:border-box !important;
-}
+.layout > .card .output-wrap{width:100% !important;box-sizing:border-box !important;}
 .layout > .card .preview{
   width:100% !important;
   grid-template-columns:repeat(5,minmax(0,1fr)) !important;
@@ -215,19 +187,10 @@ td b{color:var(--green)}
 .layout > .right-col .card-body{padding:11px 12px !important;}
 .layout > .right-col .metric-grid{gap:6px !important;padding:10px !important;}
 .layout > .right-col .metric{padding:11px !important;}
-@media(min-width:1600px){
-  .layout{grid-template-columns:350px minmax(0,1fr) !important;}
-}
+@media(min-width:1600px){.layout{grid-template-columns:350px minmax(0,1fr) !important;}}
 @media(max-width:950px){
-  .layout{
-    grid-template-columns:1fr !important;
-    row-gap:10px !important;
-  }
-  .layout > .right-col,
-  .layout > .card{
-    grid-column:1 !important;
-    grid-row:auto !important;
-  }
+  .layout{grid-template-columns:1fr !important;row-gap:10px !important;}
+  .layout > .right-col,.layout > .card{grid-column:1 !important;grid-row:auto !important;}
 }
 @media(max-width:700px){
   .container{width:94%}
@@ -236,9 +199,7 @@ td b{color:var(--green)}
   .controls button{flex:1}
   .time-control{width:100%;justify-content:space-between}
   .metric-grid{grid-template-columns:1fr 1fr}
-  .layout > .card .preview{
-    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  }
+  .layout > .card .preview{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
 }
 @media(max-width:420px){
   .terminal-title{display:none}
@@ -271,7 +232,6 @@ td b{color:var(--green)}
 
 <section class="layout">
 
-  <!-- ================= KOLOM KIRI ================= -->
   <div class="right-col">
     <div class="card">
       <div class="card-head"><h3>JUMLAH IO DAN RE</h3><span class="meta">BRANCH_BANDUNG</span></div>
@@ -329,7 +289,6 @@ td b{color:var(--green)}
     </div>
   </div>
 
-  <!-- ================= KOLOM KANAN ================= -->
   <div class="card">
     <div class="card-head"><h2>REPORT GENERATOR</h2><span class="meta">IMAGE_PIPELINE</span></div>
     <div class="card-body">
@@ -371,10 +330,6 @@ td b{color:var(--green)}
 <div id="toast" class="toast"></div>
 <script>
 
-/* =========================================================
-   AUTO REPORT TIME — jam terdekat
-   menit < 30 → bulat ke bawah ; menit ≥ 30 → bulat ke atas
-   ========================================================= */
 function getNearestHourHHMM(){
   const now = new Date();
   let h = now.getHours();
@@ -400,9 +355,6 @@ function updateJamTag(){
   tag.classList.toggle("manual", jamIsManual);
 }
 
-/* =========================================================
-   IMAGE SLOTS
-   ========================================================= */
 const SLOT_NAMES = ["BANDUNG", "SURABAYA", "SOUTHERN JAKARTA", "BANJARMASIN", "SOREANG"];
 const images = [null, null, null, null, null];
 let selectedSlot = 0;
@@ -480,12 +432,10 @@ document.addEventListener("paste", e => {
 
   const file = item.getAsFile();
 
-  // Prioritas: isi slot yang dipilih bila kosong, lalu slot kosong pertama
   let target = (selectedSlot !== null && !images[selectedSlot])
     ? selectedSlot
     : images.findIndex(x => !x);
 
-  // Bila semua slot terisi, ganti slot yang sedang dipilih
   if (target === -1) {
     if (selectedSlot !== null) {
       target = selectedSlot;
@@ -507,9 +457,6 @@ document.addEventListener("paste", e => {
   };
 });
 
-/* =========================================================
-   SUM + QUICK STATUS
-   ========================================================= */
 function updateSum() {
   sum_io_bd.innerText = (+io_cjr.value||0)+(+io_kbd.value||0);
   sum_re_bd.innerText = (+re_cjr.value||0)+(+re_kbd.value||0);
@@ -528,7 +475,13 @@ document.getElementById("jam").addEventListener("input", () => {
 });
 
 /* =========================================================
-   REPORT GENERATOR
+   REPORT GENERATOR — v4
+   Perubahan dari v3:
+   • titleSize: 3.2%  → 2.6%   (font "PS Daily Report" diperkecil)
+   • dateSize : 1.45% → 1.10%  (font tanggal di bar diperkecil)
+   • barH dihitung ulang agar proporsional dengan dateSize baru
+   • padding bawah = padX  (blok kosong setinggi padding kiri/kanan)
+     → tidak terpotong di bagian bawah
    ========================================================= */
 function gabung(e){
   const btn = e.target;
@@ -540,52 +493,123 @@ function gabung(e){
 
   btn.classList.add("loading");
 
-  setTimeout(()=>{
+  const drawReport = () => {
     const ctx = canvas.getContext("2d");
 
     const now = new Date();
     const jamVal = jam.value || getNearestHourHHMM();
 
-    const tanggal = now.toLocaleDateString("id-ID", {
-      day: "numeric",
+    const tanggalLengkap = now.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "2-digit",
       month: "long",
       year: "numeric"
-    }).toUpperCase();
+    });
 
-    const title = `REPORT PS ${tanggal} PUKUL ${jamVal}`;
+    const imgMaxW = Math.max(...images.map(i => i.width));
 
-    const titles = SLOT_NAMES;
+    // Padding kiri & kanan
+    const padX     = Math.round(imgMaxW * 0.0175);
+    const contentW = imgMaxW;
+    const totalW   = contentW + padX * 2;
 
-    let width = Math.max(...images.map(i=>i.width));
-    let height = images.reduce((a,i)=>a+i.height+60,0) + 80;
+    // ★ Font diperkecil
+    const titleSize = Math.round(totalW * 0.026);   // 3.2% → 2.6%
+    const dateSize  = Math.round(totalW * 0.0110);  // 1.45% → 1.10%
+    const citySize  = Math.round(totalW * 0.021);
 
-    canvas.width = width;
-    canvas.height = height;
+    // Header rapat
+    const titleY  = Math.round(titleSize * 1.10);
+    const barH    = Math.round(dateSize * 2.4);        // bar tetap proporsional dgn dateSize
+    const barGap  = Math.round(titleSize * 0.42);
+    const barY    = titleY + barGap;
+    const barW    = Math.min(Math.round(totalW * 0.50), Math.round(titleSize * 16));
+    const headerH = barY + barH + Math.round(totalW * 0.014);
 
-    ctx.fillStyle="#fff";
-    ctx.fillRect(0,0,width,height);
+    // Jarak antar blok
+    const gapBelow   = Math.round(totalW * 0.012);
+    const cityLabelH = Math.round(citySize * 1.30);
 
-    ctx.fillStyle="#111";
-    ctx.font="bold 30px Poppins";
+    let totalH = headerH;
+    images.forEach(img => {
+      const s = contentW / img.width;
+      totalH += cityLabelH + img.height * s + gapBelow;
+    });
 
+    // ★ TAMBAHAN: padding bawah = padX (sama dengan padding kiri/kanan)
+    totalH += padX;
+
+    canvas.width  = totalW;
+    canvas.height = totalH;
+
+    // Background
+    ctx.fillStyle = "#F0E9E9";
+    ctx.fillRect(0, 0, totalW, totalH);
+
+    const centerX = totalW / 2;
+
+    // Judul
     ctx.textAlign = "center";
-    ctx.fillText(title, canvas.width / 2, 30);
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#C0392B";
+    ctx.font = `bold ${titleSize}px 'Open Sans', sans-serif`;
+    ctx.fillText(`PS Daily Report ${jamVal}`, centerX, titleY);
+
+    // Bar tanggal
+    const barX = centerX - barW / 2;
+    ctx.fillStyle = "#8B8B8B";
+    ctx.fillRect(barX, barY, barW, barH);
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = `bold ${dateSize}px 'Open Sans', sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.fillText(tanggalLengkap, centerX, barY + barH / 2);
+
+    // Blok kota + gambar
     ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
 
-    let y = 70;
+    let y = headerH;
 
-    images.forEach((img,i)=>{
-      ctx.fillStyle="#000";
-      ctx.font="28px Poppins";
-      ctx.fillText(titles[i],10,y);
-      y+=10;
-      ctx.drawImage(img,0,y);
-      y += img.height + 40;
+    images.forEach((img, i) => {
+      // Nama kota
+      ctx.fillStyle = "#C0392B";
+      ctx.font = `bold ${citySize}px 'Open Sans', sans-serif`;
+      ctx.fillText(SLOT_NAMES[i], padX, y + citySize);
+
+      // Garis merah
+      const lineY = y + citySize + Math.round(citySize * 0.28);
+      ctx.strokeStyle = "#C0392B";
+      ctx.lineWidth = Math.max(3, Math.round(totalW * 0.0035));
+      ctx.beginPath();
+      ctx.moveTo(padX, lineY);
+      ctx.lineTo(totalW - padX, lineY);
+      ctx.stroke();
+
+      // Gambar
+      const imgY = lineY + Math.round(citySize * 0.22);
+      const s    = contentW / img.width;
+      const imgH = img.height * s;
+      ctx.drawImage(img, padX, imgY, contentW, imgH);
+
+      y = imgY + imgH + gapBelow;
     });
 
     btn.classList.remove("loading");
     showToast("Report berhasil dibuat");
-  },300);
+  };
+
+  if (document.fonts && document.fonts.load) {
+    Promise.all([
+      document.fonts.load("bold 40px 'Open Sans'"),
+      document.fonts.load("bold 20px 'Open Sans'"),
+      document.fonts.load("bold 32px 'Open Sans'")
+    ]).then(() => {
+      setTimeout(drawReport, 300);
+    }).catch(() => setTimeout(drawReport, 300));
+  } else {
+    setTimeout(drawReport, 300);
+  }
 }
 
 function copyCanvas(e){
@@ -654,32 +678,23 @@ BRANCH BANDUNG : IO = ${asum_io_bd.innerText} RE = ${asum_re_bd.innerText}`;
     });
 }
 
-/* =========================================================
-   CLEAR — perbaikan total
-   ========================================================= */
 function clearCanvas(){
-  // 1) Bebaskan memori seluruh object URL gambar
   images.forEach(img => { if (img?.src) URL.revokeObjectURL(img.src); });
 
-  // 2) Bersihkan canvas
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvas.width = 0;
   canvas.height = 0;
 
-  // 3) Kembalikan 5 slot gambar ke kondisi kosong (JANGAN pakai images.length = 0)
   images.fill(null);
   selectedSlot = 0;
 
-  // 4) Render ulang preview agar 5 slot kosong tampil kembali & counter diperbarui
   renderPreview();
-
   showToast("Kanvas dan gambar berhasil dibersihkan");
 }
 
 </script>
 <script>
-/* UI enhancement: live quick-status mirrors existing calculations without changing report logic. */
 function syncQuickStatus(){
   const map = {
     metric_io: document.getElementById('sum_io_bd')?.innerText || '0',
