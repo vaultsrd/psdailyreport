@@ -148,7 +148,7 @@ td b{color:var(--green)}
 .slot-empty{
   text-align:center;color:var(--muted);font-size:11px;line-height:1.5;padding:8px;
 }
-.slot-empty b{display:block;color:#9aa8b5;margin-bottom:3px}
+.slot-empty b{display:block;color:#9aa8b5;margin-bottom:3px;letter-spacing:.5px}
 .slot-actions{
   position:absolute;right:6px;bottom:6px;z-index:3;
   display:flex;gap:5px;
@@ -314,7 +314,7 @@ td b{color:var(--green)}
             <tr><td><b>BRANCH BANDUNG</b></td><td id="asum_io_bd" class="total-cell">0</td><td id="asum_re_bd" class="total-cell">0</td></tr>
           </tbody></table>
         </div>
-        <div class="report-copy"><button class="green-btn" onclick="copyReportText(event)">Copy Teks Report</button></div>
+        <div class="report-copy"><button class="green-btn" onclick="copyReportText(event)">Salin Teks Report</button></div>
       </div>
     </div>
 
@@ -333,11 +333,11 @@ td b{color:var(--green)}
   <div class="card">
     <div class="card-head"><h2>REPORT GENERATOR</h2><span class="meta">IMAGE_PIPELINE</span></div>
     <div class="card-body">
-      <div id="pasteArea" class="dropzone" title="Klik lalu paste gambar dengan Ctrl + V">
+      <div id="pasteArea" class="dropzone" title="Klik lalu tempel gambar dengan Ctrl + V">
         <div class="drop-inner">
           <div class="upload-icon">⌘</div>
-          <strong>Ctrl + V — Paste 5 gambar di sini</strong>
-          <small>Clipboard image input · urutan gambar mengikuti urutan paste</small>
+          <strong>Ctrl + V — Tempel 5 gambar di sini</strong>
+          <small>Input gambar dari clipboard · urutan gambar mengikuti urutan tempel</small>
         </div>
       </div>
       <div class="preview-wrap">
@@ -345,7 +345,7 @@ td b{color:var(--green)}
         <div id="preview" class="preview"></div>
         <div class="preview-help">
           <span>Klik slot untuk memilih · <b>Ctrl + V</b> untuk mengisi / mengganti gambar</span>
-          <span class="preview-count" id="imageCount">0 / 5 READY</span>
+          <span class="preview-count" id="imageCount">0 / 5 SIAP</span>
         </div>
       </div>
       <div class="controls">
@@ -355,9 +355,9 @@ td b{color:var(--green)}
           <span class="auto-tag" id="jamTag">AUTO</span>
           <button class="mini" type="button" onclick="setNearestHour(true)" title="Set ulang ke jam terdekat">↻ AUTO</button>
         </div>
-        <button class="primary" onclick="gabung(event)">Generate Report</button>
-        <button class="secondary" onclick="copyCanvas(event)">Copy Image</button>
-        <button class="clear-btn" onclick="clearCanvas()">Clear</button>
+        <button class="primary" onclick="gabung(event)">Buat Report</button>
+        <button class="secondary" onclick="copyCanvas(event)">Salin Gambar</button>
+        <button class="clear-btn" onclick="clearCanvas()">Bersihkan</button>
       </div>
       <div class="canvas-shell"><canvas id="canvas"></canvas></div>
       <div class="canvas-note">OUTPUT → canvas report · dapat disalin sebagai PNG langsung ke clipboard</div>
@@ -403,6 +403,7 @@ function updateJamTag(){
 /* =========================================================
    IMAGE SLOTS
    ========================================================= */
+const SLOT_NAMES = ["BANDUNG", "SURABAYA", "SOUTHERN JAKARTA", "BANJARMASIN", "SOREANG"];
 const images = [null, null, null, null, null];
 let selectedSlot = 0;
 
@@ -410,7 +411,7 @@ function showToast(msg){
   const toast = document.getElementById("toast");
   toast.innerText = msg;
   toast.classList.add("show");
-  setTimeout(()=> toast.classList.remove("show"),2000);
+  setTimeout(()=> toast.classList.remove("show"),2200);
 }
 
 function renderPreview(){
@@ -420,7 +421,9 @@ function renderPreview(){
   images.forEach((img, i) => {
     const slot = document.createElement("div");
     slot.className = "image-slot" + (i === selectedSlot ? " selected" : "") + (!img ? " empty" : "");
-    slot.title = img ? `Slot ${i+1} · klik untuk memilih` : `Slot ${i+1} kosong · klik lalu Ctrl + V`;
+    slot.title = img
+      ? `Slot ${i+1} · ${SLOT_NAMES[i]} · klik untuk memilih`
+      : `Slot ${i+1} · ${SLOT_NAMES[i]} kosong · klik lalu Ctrl + V`;
 
     const badge = document.createElement("div");
     badge.className = "slot-index";
@@ -431,7 +434,7 @@ function renderPreview(){
       ready++;
       const p = document.createElement("img");
       p.src = img.src;
-      p.alt = `Captured image ${i+1}`;
+      p.alt = `Gambar ${SLOT_NAMES[i]}`;
       slot.appendChild(p);
 
       const actions = document.createElement("div");
@@ -447,27 +450,27 @@ function renderPreview(){
         images[i] = null;
         selectedSlot = i;
         renderPreview();
-        showToast(`Gambar ${i+1} dihapus`);
+        showToast(`Gambar ${SLOT_NAMES[i]} berhasil dihapus`);
       };
       actions.appendChild(del);
       slot.appendChild(actions);
     } else {
       const empty = document.createElement("div");
       empty.className = "slot-empty";
-      empty.innerHTML = "<b>EMPTY SLOT</b>Ctrl + V";
+      empty.innerHTML = `<b>SLOT ${SLOT_NAMES[i]}</b>Ctrl + V`;
       slot.appendChild(empty);
     }
 
     slot.onclick = () => {
       selectedSlot = i;
       renderPreview();
-      showToast(`Slot ${i+1} dipilih`);
+      showToast(`Slot ${SLOT_NAMES[i]} dipilih`);
     };
 
     preview.appendChild(slot);
   });
 
-  imageCount.textContent = `${ready} / 5 READY`;
+  imageCount.textContent = `${ready} / 5 SIAP`;
 }
 
 document.addEventListener("paste", e => {
@@ -476,13 +479,20 @@ document.addEventListener("paste", e => {
   e.preventDefault();
 
   const file = item.getAsFile();
-  const target = selectedSlot !== null && !images[selectedSlot]
+
+  // Prioritas: isi slot yang dipilih bila kosong, lalu slot kosong pertama
+  let target = (selectedSlot !== null && !images[selectedSlot])
     ? selectedSlot
     : images.findIndex(x => !x);
 
+  // Bila semua slot terisi, ganti slot yang sedang dipilih
   if (target === -1) {
-    showToast("5 slot sudah terisi — pilih slot lalu hapus/ganti");
-    return;
+    if (selectedSlot !== null) {
+      target = selectedSlot;
+    } else {
+      showToast("Kelima slot sudah terisi — pilih slot lalu hapus atau ganti");
+      return;
+    }
   }
 
   if (images[target]?.src) URL.revokeObjectURL(images[target].src);
@@ -493,7 +503,7 @@ document.addEventListener("paste", e => {
     images[target] = img;
     selectedSlot = target;
     renderPreview();
-    showToast(`Gambar ${target+1} berhasil diperbarui`);
+    showToast(`Gambar ${SLOT_NAMES[target]} berhasil dimuat`);
   };
 });
 
@@ -522,16 +532,16 @@ document.getElementById("jam").addEventListener("input", () => {
    ========================================================= */
 function gabung(e){
   const btn = e.target;
+
+  if(images.some(img => !img)){
+    showToast("Kelima slot gambar harus terisi terlebih dahulu");
+    return;
+  }
+
   btn.classList.add("loading");
 
   setTimeout(()=>{
-    if(images.some(img => !img)){
-      showToast("Harus 5 gambar!");
-      btn.classList.remove("loading");
-      return;
-    }
-
-    const ctx=canvas.getContext("2d");
+    const ctx = canvas.getContext("2d");
 
     const now = new Date();
     const jamVal = jam.value || getNearestHourHHMM();
@@ -544,7 +554,7 @@ function gabung(e){
 
     const title = `REPORT PS ${tanggal} PUKUL ${jamVal}`;
 
-    const titles = ["BANDUNG","SURABAYA","SOUTHERN JAKARTA","BANJARMASIN","SOREANG"];
+    const titles = SLOT_NAMES;
 
     let width = Math.max(...images.map(i=>i.width));
     let height = images.reduce((a,i)=>a+i.height+60,0) + 80;
@@ -574,19 +584,30 @@ function gabung(e){
     });
 
     btn.classList.remove("loading");
-    showToast("Report berhasil dibuat!");
-
-  },500);
+    showToast("Report berhasil dibuat");
+  },300);
 }
 
 function copyCanvas(e){
   const btn = e.target;
+
+  if(!canvas.width || !canvas.height){
+    showToast("Belum ada report yang dapat disalin");
+    return;
+  }
+
   btn.classList.add("loading");
 
   canvas.toBlob(b=>{
-    navigator.clipboard.write([new ClipboardItem({"image/png":b})]);
-    btn.classList.remove("loading");
-    showToast("Mantapz Berhasil di-copy");
+    if(!b){
+      btn.classList.remove("loading");
+      showToast("Gagal membuat gambar report");
+      return;
+    }
+    navigator.clipboard.write([new ClipboardItem({"image/png":b})])
+      .then(()=> showToast("Gambar report berhasil disalin ke clipboard"))
+      .catch(()=> showToast("Gagal menyalin gambar ke clipboard"))
+      .finally(()=> btn.classList.remove("loading"));
   });
 }
 
@@ -622,20 +643,38 @@ CIANJUR : IO = ${aio_cjr.value||0} RE = ${are_cjr.value||0}
 KOTA BANDUNG : IO = ${aio_kbd.value||0} RE = ${are_kbd.value||0}
 BRANCH BANDUNG : IO = ${asum_io_bd.innerText} RE = ${asum_re_bd.innerText}`;
 
-  navigator.clipboard.writeText(text).then(()=>{
-    btn.classList.remove("loading");
-    showToast("OK BRO Berhasil di-copy");
-  });
+  navigator.clipboard.writeText(text)
+    .then(()=>{
+      btn.classList.remove("loading");
+      showToast("Teks report berhasil disalin ke clipboard");
+    })
+    .catch(()=>{
+      btn.classList.remove("loading");
+      showToast("Gagal menyalin teks report");
+    });
 }
 
+/* =========================================================
+   CLEAR — perbaikan total
+   ========================================================= */
 function clearCanvas(){
+  // 1) Bebaskan memori seluruh object URL gambar
+  images.forEach(img => { if (img?.src) URL.revokeObjectURL(img.src); });
+
+  // 2) Bersihkan canvas
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvas.width = 0;
   canvas.height = 0;
-  images.length = 0;
-  document.getElementById("preview").innerHTML = "";
-  showToast("EDUUN dibersihkan!");
+
+  // 3) Kembalikan 5 slot gambar ke kondisi kosong (JANGAN pakai images.length = 0)
+  images.fill(null);
+  selectedSlot = 0;
+
+  // 4) Render ulang preview agar 5 slot kosong tampil kembali & counter diperbarui
+  renderPreview();
+
+  showToast("Kanvas dan gambar berhasil dibersihkan");
 }
 
 </script>
