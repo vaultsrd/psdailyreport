@@ -75,7 +75,7 @@ body::after{
 .preview{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
 .preview:empty{display:none}
 .preview img{width:100%;height:68px;object-fit:cover;margin:0;border-radius:6px;border:1px solid var(--border);background:#080b0f}
-.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+.ocr-status{font-size:12px;color:var(--muted,#7d8b99);width:100%;margin-top:5px;line-height:1.5}.ocr-panel{display:none;width:100%;padding:12px;margin-top:10px;border:1px solid var(--border,#1b2633);border-radius:10px;background:var(--panel2,#0e131a)}.ocr-panel.show{display:block}.ocr-panel textarea{width:100%;min-height:100px;resize:vertical;background:var(--bg,#05070a);color:var(--text,#e6edf3);border:1px solid var(--border,#1b2633);border-radius:8px;padding:9px;font:12px/1.5 ui-monospace,monospace}.ocr-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.ocr-actions button{font-size:12px}.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
 .time-control{display:flex;align-items:center;gap:9px;padding:8px 11px;border:1px solid var(--border);background:#090d12;border-radius:7px;color:#697786;font-size:10px;position:relative}
 .time-control .auto-tag{
   font-size:9px;color:#7ee787;border:1px solid #1d3825;background:rgba(57,211,83,.05);
@@ -94,6 +94,16 @@ input{
 input:focus{border-color:rgba(57,211,83,.55);box-shadow:0 0 0 3px rgba(57,211,83,.08)}
 input[type=time]{padding:5px 7px;width:100px;color-scheme:dark}
 input[type=number]{width:80px;padding:7px 8px;text-align:center;font-size:13px}
+/* Hilangkan spinner bawaan pada seluruh input angka */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+input[type="number"]{
+  -moz-appearance:textfield;
+  appearance:textfield;
+}
 
 /* ★ Tombol — JetBrains Mono */
 button{
@@ -106,6 +116,10 @@ button{
 button:hover{transform:translateY(-1px);filter:brightness(1.12)}
 button:active{transform:translateY(0)}
 .primary{background:linear-gradient(135deg,#238636,#196c2e);border-color:#2ea043}
+/* Aksen merah khusus untuk aksi OCR, tetap selaras dengan tema gelap */
+.scan-ocr-btn{background:linear-gradient(135deg,#7d4ddb,#5a2fb8)!important;border-color:#8a5cf0!important;color:#fff!important;box-shadow:0 5px 14px rgba(125,77,219,.22)}
+.scan-ocr-btn:hover{background:linear-gradient(135deg,#8b5be8,#6938c8)!important;border-color:#8a5cf0!important;box-shadow:0 7px 18px rgba(125,77,219,.32);transform:translateY(-1px)}
+.scan-ocr-btn:focus-visible{outline:2px solid #8a5cf0;outline-offset:3px}
 .secondary{background:#102a46;border-color:#214d78;color:#b9d9ff}
 .clear-btn{background:#171d25;border-color:#293544;color:#aab5c0}
 .green-btn{width:100%;background:linear-gradient(135deg,#238636,#196c2e);border-color:#2ea043;padding:11px;font-size:13px}
@@ -328,9 +342,34 @@ td b{color:var(--green)}
           <span class="auto-tag" id="jamTag">AUTO</span>
           <button class="mini" type="button" onclick="setNearestHour(true)" title="Set ulang ke jam terdekat">↻ AUTO</button>
         </div>
+        <button class="primary scan-ocr-btn" type="button" onclick="scanSelectedImage()"><i data-lucide="scan" aria-hidden="true" style="width:15px;height:15px;display:inline-block;vertical-align:-3px;margin-right:5px"></i>Scan Angka dari Gambar</button>
         <button class="primary" onclick="gabung(event)">Buat Report</button>
         <button class="secondary" onclick="copyCanvas(event)">Salin Gambar</button>
         <button class="clear-btn" onclick="clearCanvas()">Bersihkan</button>
+      </div>
+      <div id="ocrPanel" class="ocr-panel">
+        <b>HASIL OCR / VERIFIKASI</b>
+        <p class="ocr-status" id="ocrStatus">Pilih slot preview yang berisi screenshot untuk mulai memindai.</p>
+        <textarea id="ocrRawText" placeholder="Teks yang terbaca akan muncul di sini..."></textarea>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:9px">
+          <label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted,#7d8b99)">Lokasi tujuan angka
+            <select id="ocrTarget" style="width:100%;padding:9px;border-radius:8px;background:var(--bg,#05070a);color:var(--text,#e6edf3);border:1px solid var(--border,#1b2633)">
+              <option value="io_cjr|re_cjr">CIANJUR — Regional</option>
+              <option value="io_kbd|re_kbd">KOTA BANDUNG — Regional</option>
+              <option value="io_sby|re_sby">SURABAYA</option>
+              <option value="io_sj|re_sj">SOUTHERN JAKARTA</option>
+              <option value="io_bjm|re_bjm">BANJARMASIN</option>
+              <option value="io_srg|re_srg">SOREANG</option>
+              <option value="aio_cjr|are_cjr">CIANJUR — Agency</option>
+              <option value="aio_kbd|are_kbd">KOTA BANDUNG — Agency</option>
+            </select>
+          </label>
+        </div>
+        <div class="ocr-actions">
+          <button class="secondary" type="button" onclick="applyOCRText()">Terapkan Angka ke Form</button>
+          <button class="secondary" type="button" onclick="document.getElementById('ocrPanel').classList.remove('show')">Tutup</button>
+        </div>
+        <small class="ocr-status">Periksa angka sebelum digunakan. OCR dapat keliru membaca screenshot yang buram atau tabel rapat.</small>
       </div>
       <div class="canvas-shell"><canvas id="canvas"></canvas></div>
       <div class="canvas-note">OUTPUT → canvas report · dapat disalin sebagai PNG langsung ke clipboard</div>
@@ -707,6 +746,89 @@ document.querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>set
 const _updateSum=window.updateSum;
 if(typeof _updateSum==='function') syncQuickStatus();
 setInterval(syncQuickStatus,250);
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+const OCR_FIELD_MAP = {
+  "CIANJUR":[["io_cjr","re_cjr"],["aio_cjr","are_cjr"]],
+  "KOTA BANDUNG":[["io_kbd","re_kbd"],["aio_kbd","are_kbd"]],
+  "SURABAYA":[["io_sby","re_sby"]],
+  "SOUTHERN JAKARTA":[["io_sj","re_sj"]],
+  "BANJARMASIN":[["io_bjm","re_bjm"]],
+  "SOREANG":[["io_srg","re_srg"]]
+};
+function ocrPanel(message){
+  document.getElementById('ocrPanel').classList.add('show');
+  if(message) document.getElementById('ocrStatus').textContent=message;
+  document.getElementById('ocrPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+async function runOCROnSource(source,label){
+  if(!window.Tesseract){showToast('Pustaka OCR belum termuat. Periksa koneksi internet.');return;}
+  ocrPanel('Memindai '+label+'… mohon tunggu.');
+  const status=document.getElementById('ocrStatus');
+  try{
+    const result=await Tesseract.recognize(source,'eng',{
+      logger:m=>{if(m.status==='recognizing text')status.textContent='Membaca teks '+label+'… '+Math.round((m.progress||0)*100)+'%';}
+    });
+    document.getElementById('ocrRawText').value=result.data.text||'';
+    status.textContent='Pemindaian selesai. Periksa teks, lalu klik “Terapkan Angka ke Form”.';
+    showToast('OCR selesai — periksa hasilnya');
+  }catch(err){status.textContent='OCR gagal: '+err.message+'. Pastikan koneksi internet tersedia.';}
+}
+function scanSelectedImage(){
+  const img=images[selectedSlot];
+  if(!img){showToast('Pilih slot preview yang sudah berisi screenshot terlebih dahulu');return;}
+  runOCROnSource(img, 'gambar slot '+(selectedSlot+1)+' / '+SLOT_NAMES[selectedSlot]);
+}
+function normalizeOCRText(s){return s.toUpperCase().replace(/[|]/g,'I').replace(/\s+/g,' ').trim();}
+function parseOCRLine(line){
+  let m=line.match(/\bIO\b\s*[:=\-]?\s*([\d.,]+).*?\bRE\b\s*[:=\-]?\s*([\d.,]+)/i);
+  if(m)return [ocrNumber(m[1]),ocrNumber(m[2])];
+  const nums=[...line.matchAll(/\b\d[\d.,]*\b/g)].map(x=>ocrNumber(x[0]));
+  return nums.length>=2?nums.slice(-2):null;
+}
+function ocrNumber(v){return Number(String(v).replace(/[.,]/g,''))||0;}
+function applyOCRText(){
+  const raw=document.getElementById('ocrRawText').value;
+  const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  let applied=[];
+  // First try the automatic route when a known location and two values appear together.
+  for(const [name,groups] of Object.entries(OCR_FIELD_MAP)){
+    const normalizedName=normalizeOCRText(name);
+    const line=lines.find(l=>normalizeOCRText(l).includes(normalizedName));
+    if(!line)continue;
+    const pair=parseOCRLine(line);
+    if(!pair)continue;
+    const isAgency=/AGENCY|\bA GENCY\b/i.test(line);
+    const fields=groups.length===1?groups[0]:(isAgency?groups[1]:groups[0]);
+    fields.forEach((id,i)=>{const el=document.getElementById(id);if(el)el.value=pair[i];});
+    applied.push(name+(isAgency?' Agency':'')+' IO '+pair[0]+' / RE '+pair[1]);
+  }
+  // If OCR only returns numbers (e.g. "199 ° 184"), put the first two numbers into the selected location.
+  if(!applied.length){
+    const nums=[...raw.matchAll(/\b\d[\d.,]*\b/g)].map(m=>ocrNumber(m[0]));
+    if(nums.length>=2){
+      const target=document.getElementById('ocrTarget').value.split('|');
+      const io=document.getElementById(target[0]), re=document.getElementById(target[1]);
+      if(io&&re){io.value=nums[0];re.value=nums[1];applied.push(document.getElementById('ocrTarget').selectedOptions[0].text+' — IO '+nums[0]+' / RE '+nums[1]);}
+    }
+  }
+  if(typeof updateSum==='function')updateSum();
+  if(typeof syncQuickStatus==='function')syncQuickStatus();
+  const status=document.getElementById('ocrStatus');
+  status.textContent=applied.length
+    ?'Berhasil mengisi: '+applied.join('; ')+'. Periksa kembali input IO dan RE.'
+    :'Belum menemukan dua angka. Pastikan hasil OCR memuat angka yang ingin diterapkan.';
+  if(applied.length)showToast('Angka OCR diterapkan ke form — periksa kembali');
+}
+</script>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
 </script>
 </body>
 </html>
