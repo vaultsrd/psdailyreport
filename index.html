@@ -140,6 +140,25 @@ td:first-child{color:#aeb8c2;text-align:left;padding-left:13px}
 td b{color:var(--green)}
 .table-section input[type=number]{width:80px}
 .total-cell{color:var(--green)!important;font-weight:700;background:rgba(57,211,83,.035)!important}
+/* Highlight baris tabel yang baru diisi melalui OCR */
+tr.ocr-filled-row td{
+  background:rgba(57,211,83,.20)!important;
+  color:#eaffed!important;
+  border-top:1px solid rgba(57,211,83,.75)!important;
+  border-bottom:1px solid rgba(57,211,83,.75)!important;
+  transition:background .25s ease,box-shadow .25s ease;
+}
+tr.ocr-filled-row td:first-child{
+  box-shadow:inset 4px 0 0 #39d353;
+  color:#eaffed!important;
+  font-weight:800;
+}
+tr.ocr-filled-row input[type=number]{
+  background:#12351f!important;
+  border-color:#39d353!important;
+  color:#eaffed!important;
+  box-shadow:0 0 0 2px rgba(57,211,83,.22),0 0 12px rgba(57,211,83,.16)!important;
+}
 .report-copy{margin-top:15px}
 .canvas-note{font-size:9px;color:#46515d;margin-top:8px}
 .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
@@ -789,10 +808,26 @@ function parseOCRLine(line){
   return nums.length>=2?nums.slice(-2):null;
 }
 function ocrNumber(v){return Number(String(v).replace(/[.,]/g,''))||0;}
+function highlightOCRRows(fieldIds){
+  document.querySelectorAll('tr.ocr-filled-row').forEach(row=>row.classList.remove('ocr-filled-row'));
+  const rows=new Set();
+  fieldIds.forEach(id=>{
+    const field=document.getElementById(id);
+    const row=field?.closest('tr');
+    if(row)rows.add(row);
+  });
+  rows.forEach(row=>row.classList.add('ocr-filled-row'));
+}
+function nextOCRTarget(){
+  const select=document.getElementById('ocrTarget');
+  if(!select || !select.options.length)return;
+  select.selectedIndex=(select.selectedIndex+1)%select.options.length;
+}
 function applyOCRText(){
   const raw=document.getElementById('ocrRawText').value;
   const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
   let applied=[];
+  const appliedFieldIds=[];
   // First try the automatic route when a known location and two values appear together.
   for(const [name,groups] of Object.entries(OCR_FIELD_MAP)){
     const normalizedName=normalizeOCRText(name);
@@ -802,7 +837,7 @@ function applyOCRText(){
     if(!pair)continue;
     const isAgency=/AGENCY|\bA GENCY\b/i.test(line);
     const fields=groups.length===1?groups[0]:(isAgency?groups[1]:groups[0]);
-    fields.forEach((id,i)=>{const el=document.getElementById(id);if(el)el.value=pair[i];});
+    fields.forEach((id,i)=>{const el=document.getElementById(id);if(el){el.value=pair[i];appliedFieldIds.push(id);}});
     applied.push(name+(isAgency?' Agency':'')+' IO '+pair[0]+' / RE '+pair[1]);
   }
   // If OCR only returns numbers (e.g. "199 ° 184"), put the first two numbers into the selected location.
@@ -811,7 +846,7 @@ function applyOCRText(){
     if(nums.length>=2){
       const target=document.getElementById('ocrTarget').value.split('|');
       const io=document.getElementById(target[0]), re=document.getElementById(target[1]);
-      if(io&&re){io.value=nums[0];re.value=nums[1];applied.push(document.getElementById('ocrTarget').selectedOptions[0].text+' — IO '+nums[0]+' / RE '+nums[1]);}
+      if(io&&re){io.value=nums[0];re.value=nums[1];appliedFieldIds.push(target[0],target[1]);applied.push(document.getElementById('ocrTarget').selectedOptions[0].text+' — IO '+nums[0]+' / RE '+nums[1]);}
     }
   }
   if(typeof updateSum==='function')updateSum();
@@ -820,7 +855,11 @@ function applyOCRText(){
   status.textContent=applied.length
     ?'Berhasil mengisi: '+applied.join('; ')+'. Periksa kembali input IO dan RE.'
     :'Belum menemukan dua angka. Pastikan hasil OCR memuat angka yang ingin diterapkan.';
-  if(applied.length)showToast('Angka OCR diterapkan ke form — periksa kembali');
+  if(applied.length){
+    highlightOCRRows(appliedFieldIds);
+    nextOCRTarget();
+    showToast('Angka OCR diterapkan — lokasi berikutnya dipilih otomatis');
+  }
 }
 </script>
 
