@@ -818,12 +818,71 @@ function highlightOCRRows(fieldIds){
   });
   rows.forEach(row=>row.classList.add('ocr-filled-row'));
 }
+
+/* =========================================================
+   RIWAYAT UNDO / REDO OCR — maksimal 10 langkah
+   ========================================================= */
+const OCR_HISTORY_LIMIT = 10;
+const OCR_UNDO_FIELD_IDS=[...new Set(Object.values(OCR_FIELD_MAP).flat(2))];
+let ocrUndoStack = [];
+let ocrRedoStack = [];
+
+function pushOCRHistory(stack, state){
+  stack.push(state);
+  if(stack.length > OCR_HISTORY_LIMIT) stack.shift();
+}
+
+function captureOCRState(){
+  const values={};
+  OCR_UNDO_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el)values[id]=el.value;});
+  const target=document.getElementById('ocrTarget');
+  const highlighted=[];
+  document.querySelectorAll('tr.ocr-filled-row').forEach(row=>row.querySelectorAll('input[id]').forEach(el=>highlighted.push(el.id)));
+  return {values,targetIndex:target?target.selectedIndex:-1,highlighted};
+}
+function restoreOCRState(state){
+  if(!state)return;
+  Object.entries(state.values).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.value=value;});
+  const target=document.getElementById('ocrTarget');
+  if(target&&state.targetIndex>=0&&state.targetIndex<target.options.length)target.selectedIndex=state.targetIndex;
+  highlightOCRRows(state.highlighted);
+  if(typeof updateSum==='function')updateSum();
+  if(typeof syncQuickStatus==='function')syncQuickStatus();
+}
+function undoOCRApply(){
+  if(!ocrUndoStack.length){showToast('Tidak ada hasil OCR yang bisa di-undo');return;}
+  pushOCRHistory(ocrRedoStack, captureOCRState());
+  restoreOCRState(ocrUndoStack.pop());
+  showToast(`Undo OCR berhasil (sisa ${ocrUndoStack.length})`);
+}
+function redoOCRApply(){
+  if(!ocrRedoStack.length){showToast('Tidak ada hasil OCR yang bisa di-redo');return;}
+  pushOCRHistory(ocrUndoStack, captureOCRState());
+  restoreOCRState(ocrRedoStack.pop());
+  showToast(`Redo OCR berhasil (sisa ${ocrRedoStack.length})`);
+}
+document.addEventListener('keydown',function(e){
+  if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+  const key=e.key.toLowerCase();
+  if(key!=='z'&&key!=='y')return;
+  const active=document.activeElement;
+  // Biarkan undo pengetikan normal tetap bekerja di area teks OCR.
+  if(active&&((active.tagName==='TEXTAREA')||active.isContentEditable))return;
+  if(key==='z'){
+    e.preventDefault();
+    if(e.shiftKey)redoOCRApply();else undoOCRApply();
+  }else{
+    e.preventDefault();
+    redoOCRApply();
+  }
+});
 function nextOCRTarget(){
   const select=document.getElementById('ocrTarget');
   if(!select || !select.options.length)return;
   select.selectedIndex=(select.selectedIndex+1)%select.options.length;
 }
 function applyOCRText(){
+  const beforeOCRState=captureOCRState();
   const raw=document.getElementById('ocrRawText').value;
   const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
   let applied=[];
@@ -858,7 +917,9 @@ function applyOCRText(){
   if(applied.length){
     highlightOCRRows(appliedFieldIds);
     nextOCRTarget();
-    showToast('Angka OCR diterapkan — lokasi berikutnya dipilih otomatis');
+    pushOCRHistory(ocrUndoStack, beforeOCRState);
+    ocrRedoStack = [];
+    showToast('Angka OCR diterapkan — lokasi berikutnya dipilih otomatis. CTRL+Z untuk Undo');
   }
 }
 </script>
