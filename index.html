@@ -170,6 +170,13 @@ tr.ocr-filled-row input[type=number]{
 .footer-line{height:1px;background:var(--border);margin-bottom:24px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;padding:12px 20px;border:1px solid #c3e6cb;border-radius:8px;background:#d4edda;color:#155724;box-shadow:0 4px 16px rgba(0,0,0,.1);font-size:12px;z-index:50;transition:.25s;font-weight:500}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:.25s}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal-box{background:#ffffff;border-radius:12px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-width:400px;width:90%;border:1px solid var(--border)}
+.modal-box h3{margin:0 0 12px 0;font-size:16px;font-weight:700;color:var(--text)}
+.modal-box p{margin:0 0 20px 0;font-size:13px;color:var(--muted);line-height:1.6}
+.modal-box .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.modal-box button{padding:8px 16px;font-size:12px;border-radius:6px}
 
 .image-slot{
   position:relative;min-width:0;aspect-ratio:4/3;border:1px solid var(--border);
@@ -345,6 +352,20 @@ tr.ocr-filled-row input[type=number]{
           <small>Input gambar dari clipboard · urutan gambar mengikuti urutan tempel</small>
         </div>
       </div>
+      <div style="margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <strong style="font-size:13px;color:var(--text);display:block;margin-bottom:4px">Upload Data Excel/CSV</strong>
+            <small style="font-size:11px;color:var(--muted)"></small>
+          </div>
+          <label style="cursor:pointer">
+            <input type="file" id="csvFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleCSVUpload(event)">
+            <button type="button" class="secondary" onclick="document.getElementById('csvFileInput').click();event.preventDefault()" style="white-space:nowrap">
+              <span style="display:inline-block;margin-right:6px">📊</span>Pilih File CSV/Excel
+            </button>
+          </label>
+        </div>
+       </div>
       <div class="preview-wrap">
         <div class="preview-label">CAPTURED_IMAGES / PREVIEW</div>
         <div id="preview" class="preview"></div>
@@ -749,6 +770,175 @@ function clearCanvas(){
   showToast("Kanvas dan gambar berhasil dibersihkan");
 }
 
+/* =========================================================
+   CSV/EXCEL UPLOAD & AUTO FILL
+   ========================================================= */
+function handleCSVUpload(event){
+  const file = event.target.files[0];
+  if(!file){return;}
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results){
+      processCSVData(results.data, file.name);
+    },
+    error: function(err){
+      showCSVModal('Error', 'Gagal membaca file: ' + err.message, true);
+    }
+  });
+}
+
+function showCSVModal(title, message, isError = false){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay show';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3 style="color:${isError ? 'var(--red)' : '#28a745'}">${title}</h3>
+      <p>${message}</p>
+      <div class="modal-actions">
+        <button class="secondary" onclick="this.closest('.modal-overlay').remove()">Tutup</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function processCSVData(rows, filename){
+  // Validasi kolom
+  if(rows.length === 0){
+    showCSVModal('Error', 'File kosong atau format tidak valid', true);
+    return;
+  }
+
+  const firstRow = rows[0];
+  const requiredCols = ['wok', 'branch', 'order_id', 'process_state', 'subchannel'];
+  const missingCols = requiredCols.filter(col => !(col in firstRow));
+  
+  if(missingCols.length > 0){
+    showCSVModal('Error', 'Kolom tidak lengkap. Missing: ' + missingCols.join(', '), true);
+    return;
+  }
+
+  // Helper: count unique order_id
+  const countUniqueOrders = (filteredRows) => {
+    const unique = new Set(filteredRows.map(r => r.order_id).filter(Boolean));
+    return unique.size;
+  };
+
+  // Regional INPUT: wok-based
+  const cianjurRegional = rows.filter(r => r.wok && r.wok.toUpperCase().includes('CIANJUR'));
+  const kotaBandungRegional = rows.filter(r => r.wok && r.wok.toUpperCase().includes('KOTA BANDUNG'));
+  
+  const io_cjr_val = countUniqueOrders(cianjurRegional);
+  const re_cjr_val = countUniqueOrders(cianjurRegional.filter(r => 
+    r.process_state !== 'CANCELLED' && r.process_state !== 'PENDING_CUSTOMER_VERIFICATION' && 
+    r.process_state !== 'PENDING_APPOINTMENT_CREATION' && r.process_state !== 'PENDING_CONTRACT_APPROVAL'
+  ));
+
+  const io_kbd_val = countUniqueOrders(kotaBandungRegional);
+  const re_kbd_val = countUniqueOrders(kotaBandungRegional.filter(r => 
+    r.process_state !== 'CANCELLED' && r.process_state !== 'PENDING_CUSTOMER_VERIFICATION' &&
+    r.process_state !== 'PENDING_APPOINTMENT_CREATION' && r.process_state !== 'PENDING_CONTRACT_APPROVAL'
+  ));
+
+  // Branch Lain: branch-based
+  const surabaya = rows.filter(r => r.branch && r.branch.toUpperCase().includes('SURABAYA'));
+  const southernJkt = rows.filter(r => r.branch && r.branch.toUpperCase().includes('SOUTHERN JAKARTA'));
+  const banjarmasin = rows.filter(r => r.branch && r.branch.toUpperCase().includes('BANJARMASIN'));
+  const soreang = rows.filter(r => r.branch && r.branch.toUpperCase().includes('SOREANG'));
+
+  const io_sby_val = countUniqueOrders(surabaya);
+  const re_sby_val = countUniqueOrders(surabaya.filter(r => 
+    r.process_state !== 'CANCELLED' && r.process_state !== 'PENDING_CUSTOMER_VERIFICATION' &&
+    r.process_state !== 'PENDING_APPOINTMENT_CREATION' && r.process_state !== 'PENDING_CONTRACT_APPROVAL'
+  ));
+
+  const io_sj_val = countUniqueOrders(southernJkt);
+  const re_sj_val = countUniqueOrders(southernJkt.filter(r => 
+    r.process_state !== 'CANCELLED' && r.process_state !== 'PENDING_CUSTOMER_VERIFICATION' &&
+    r.process_state !== 'PENDING_APPOINTMENT_CREATION' && r.process_state !== 'PENDING_CONTRACT_APPROVAL'
+  ));
+
+  const io_bjm_val = countUniqueOrders(banjarmasin);
+  const re_bjm_val = countUniqueOrders(banjarmasin.filter(r => 
+    r.process_state !== 'CANCELLED' && r.process_state !== 'PENDING_CUSTOMER_VERIFICATION' &&
+    r.process_state !== 'PENDING_APPOINTMENT_CREATION' && r.process_state !== 'PENDING_CONTRACT_APPROVAL'
+  ));
+
+  const io_srg_val = countUniqueOrders(soreang);
+  const re_srg_val = countUniqueOrders(soreang.filter(r => 
+    r.process_state !== 'CANCELLED' && r.process_state !== 'PENDING_CUSTOMER_VERIFICATION' &&
+    r.process_state !== 'PENDING_APPOINTMENT_CREATION' && r.process_state !== 'PENDING_CONTRACT_APPROVAL'
+  ));
+
+  // Agency: wok-based + subchannel filter
+  const cianjurAgency = rows.filter(r => 
+    r.wok && r.wok.toUpperCase().includes('CIANJUR') && 
+    r.subchannel && r.subchannel.includes('DigiPos SF')
+  );
+  const kotaBandungAgency = rows.filter(r => 
+    r.wok && r.wok.toUpperCase().includes('KOTA BANDUNG') && 
+    r.subchannel && r.subchannel.includes('DigiPos SF')
+  );
+
+  const aio_cjr_val = countUniqueOrders(cianjurAgency);
+  const are_cjr_val = countUniqueOrders(cianjurAgency.filter(r => 
+    r.process_state !== 'CANCELLED' && r.process_state !== 'PENDING_CUSTOMER_VERIFICATION' &&
+    r.process_state !== 'PENDING_APPOINTMENT_CREATION' && r.process_state !== 'PENDING_CONTRACT_APPROVAL'
+  ));
+
+  const aio_kbd_val = countUniqueOrders(kotaBandungAgency);
+  const are_kbd_val = countUniqueOrders(kotaBandungAgency.filter(r => 
+    r.process_state !== 'CANCELLED' && r.process_state !== 'PENDING_CUSTOMER_VERIFICATION' &&
+    r.process_state !== 'PENDING_APPOINTMENT_CREATION' && r.process_state !== 'PENDING_CONTRACT_APPROVAL'
+  ));
+
+  // Fill form
+  document.getElementById('io_cjr').value = io_cjr_val;
+  document.getElementById('re_cjr').value = re_cjr_val;
+  document.getElementById('io_kbd').value = io_kbd_val;
+  document.getElementById('re_kbd').value = re_kbd_val;
+  
+  document.getElementById('io_sby').value = io_sby_val;
+  document.getElementById('re_sby').value = re_sby_val;
+  document.getElementById('io_sj').value = io_sj_val;
+  document.getElementById('re_sj').value = re_sj_val;
+  document.getElementById('io_bjm').value = io_bjm_val;
+  document.getElementById('re_bjm').value = re_bjm_val;
+  document.getElementById('io_srg').value = io_srg_val;
+  document.getElementById('re_srg').value = re_srg_val;
+
+  document.getElementById('aio_cjr').value = aio_cjr_val;
+  document.getElementById('are_cjr').value = are_cjr_val;
+  document.getElementById('aio_kbd').value = aio_kbd_val;
+  document.getElementById('are_kbd').value = are_kbd_val;
+
+  // Update sums
+  if(typeof updateSum === 'function') updateSum();
+  if(typeof syncQuickStatus === 'function') syncQuickStatus();
+
+  showCSVModal('✓ Sukses', 'Data dari ' + filename + ' (' + rows.length + ' baris) berhasil diproses dan diisi ke form');
+}
+
+function loadDummyCSVTest(){
+  const dummyData = [
+    {wok:'CIANJUR',branch:'BANDUNG',order_id:'ORD001',process_state:'COMPLETED',subchannel:'DigiPos SF'},
+    {wok:'CIANJUR',branch:'BANDUNG',order_id:'ORD002',process_state:'COMPLETED',subchannel:'Regular'},
+    {wok:'CIANJUR',branch:'BANDUNG',order_id:'ORD003',process_state:'CANCELLED',subchannel:'DigiPos SF'},
+    {wok:'KOTA BANDUNG',branch:'BANDUNG',order_id:'ORD004',process_state:'COMPLETED',subchannel:'DigiPos SF'},
+    {wok:'KOTA BANDUNG',branch:'BANDUNG',order_id:'ORD005',process_state:'PENDING_CUSTOMER_VERIFICATION',subchannel:'Regular'},
+    {wok:'KOTA BANDUNG',branch:'BANDUNG',order_id:'ORD006',process_state:'COMPLETED',subchannel:'Regular'},
+    {wok:'OTHER',branch:'SURABAYA',order_id:'ORD007',process_state:'COMPLETED',subchannel:'Regular'},
+    {wok:'OTHER',branch:'SURABAYA',order_id:'ORD008',process_state:'CANCELLED',subchannel:'Regular'},
+    {wok:'OTHER',branch:'SOUTHERN JAKARTA',order_id:'ORD009',process_state:'COMPLETED',subchannel:'Regular'},
+    {wok:'OTHER',branch:'BANJARMASIN',order_id:'ORD010',process_state:'COMPLETED',subchannel:'Regular'},
+    {wok:'OTHER',branch:'SOREANG',order_id:'ORD011',process_state:'COMPLETED',subchannel:'Regular'},
+    {wok:'OTHER',branch:'SOREANG',order_id:'ORD012',process_state:'PENDING_CUSTOMER_VERIFICATION',subchannel:'Regular'}
+  ];
+  processCSVData(dummyData, 'dummy_test.csv');
+}
+
 </script>
 <script>
 function syncQuickStatus(){
@@ -767,6 +957,7 @@ setInterval(syncQuickStatus,250);
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script>
 <script>
 const OCR_FIELD_MAP = {
   "CIANJUR":[["io_cjr","re_cjr"],["aio_cjr","are_cjr"]],
